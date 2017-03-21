@@ -10,7 +10,7 @@ Python logger used at Alkivi
 
 Example
 
-```
+```python
 from alkivi import logger as _logger
 import logging
 
