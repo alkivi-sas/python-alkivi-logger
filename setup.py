@@ -5,12 +5,18 @@ from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
 from os import path
+# To convert md to rst
+import pypandoc
+
 
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
+readme = path.join(here, 'README.md')
+try:
+    long_description = pypandoc.convert(readme, 'rst')
+except(IOError, ImportError):
+    long_description = open(readme).read()
 
 setup(
     name='alkivi-logger',
@@ -18,7 +24,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='1.1.0',
+    version='1.1.1',
 
     description='Python logger used at Alkivi',
     long_description=long_description,
