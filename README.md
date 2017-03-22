@@ -11,33 +11,44 @@ Python logger used at Alkivi
 Example
 
 ```python
-from alkivi import logger as _logger
 import logging
+
+from alkivi.logger import Logger
 
 #
 # Define Logger
 #
-logger = _logger.Logger(
-        min_log_level_to_mail   = logging.ERROR,
-        min_log_level_to_save   = logging.DEBUG,
-        min_log_level_to_print  = logging.DEBUG,
-        min_log_level_to_syslog = None,
-        emails=['anthony@alkivi.fr'])
+l = logging.getLogger(__name__)
+logger = Logger(l,
+                min_log_level_to_mail=None,
+                min_log_level_to_save=logging.DEBUG,
+                min_log_level_to_print=logging.DEBUG,
+                min_log_level_to_syslog=None,
+                emails=['anthony@alkivi.fr'])
 
 #
-# Basic usage
+# All log level, from bottom to top
 #
-logger.debug_debug('This is a very low level debug')
 logger.debug('This is a debug comment')
-logger.log('This is a basic log')
-logger.info('This is a info comment')
-logger.important('This is an important comment')
+logger.info('This is an info comment')
 logger.warning('This is a warning comment')
-logger.error('This is a error comment')
-logger.critical('THis is very dangerous, please have a look !')
+logger.error('This is an error comment')
+logger.critical('This is a critical comment')
+
+try:
+    1/0
+except Exception as e:
+    logger.exception('This is an exception comment')
+    pass
 
 #
-# Now let's do some loop
+# You can adjust log level on the fly
+#
+logger.set_min_level_to_mail(logging.WARNING)
+logger.set_min_level_to_save(logging.WARNING)
+
+#
+# You can use loops
 #
 logger.new_loop_logger()
 for i in range(0, 11):
@@ -52,6 +63,10 @@ for i in range(0, 11):
 
         # Dont forget to close logger or shit will happen
         logger.del_loop_logger()
+    # Bonus point : if emailing is set, only send email for the loop we have
+    # error
+    if i == 10:
+        logger.critical("We shall receive only mail for last loop")
 
 logger.del_loop_logger()
 logger.debug('We now remove an loop, thus a prefix')
