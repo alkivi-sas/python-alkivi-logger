@@ -5,8 +5,6 @@ from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
 from os import path
-# To convert md to rst
-import pypandoc
 
 
 here = path.abspath(path.dirname(__file__))
@@ -14,6 +12,8 @@ here = path.abspath(path.dirname(__file__))
 # Get the long description from the README file
 readme = path.join(here, 'README.md')
 try:
+    # To convert md to rst
+    import pypandoc
     long_description = pypandoc.convert(readme, 'rst')
 except(IOError, ImportError):
     long_description = open(readme).read()
@@ -24,7 +24,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='1.1.1',
+    version='1.1.2',
 
     description='Python logger used at Alkivi',
     long_description=long_description,

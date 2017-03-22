@@ -215,7 +215,7 @@ class Logger():
         """Allow to change save level after creation
         """
         self.min_log_level_to_save = level
-        handler_class = logging.handler_class.TimedRotatingFileHandler
+        handler_class = logging.handlers.TimedRotatingFileHandler
         self._set_min_level(handler_class, level)
 
     def set_min_level_to_mail(self, level):
