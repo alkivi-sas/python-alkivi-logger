@@ -18,13 +18,12 @@ from alkivi.logger import Logger
 #
 # Define Logger
 #
-l = logging.getLogger(__name__)
-logger = Logger(l,
-                min_log_level_to_mail=None,
+logger = Logger(min_log_level_to_mail=None,
                 min_log_level_to_save=logging.DEBUG,
                 min_log_level_to_print=logging.DEBUG,
                 min_log_level_to_syslog=None,
-                emails=['anthony@alkivi.fr'])
+                emails=['anthony@alkivi.fr'],
+                use_root_logger=False) # If set to True will use root_logger
 
 #
 # All log level, from bottom to top
@@ -71,6 +70,9 @@ for i in range(0, 11):
 logger.del_loop_logger()
 logger.debug('We now remove an loop, thus a prefix')
 ```
+
+## Parameters
+
 
 ## Tests
 

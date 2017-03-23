@@ -1,8 +1,5 @@
-"""Alkivi Logger used in scripts
+# -*- coding: utf-8 -*-
 
-Define a logger that can handle mail syslog file and other stuff
-See the scripts in sample for better explanation
-"""
 import logging
 import logging.handlers
 import logging.config
@@ -13,6 +10,7 @@ import socket
 import pprint
 
 from .handlers import AlkiviEmailHandler
+from .singleton import Singleton
 
 # Globals used to send extra information using emails
 SOURCE = sys.argv[0]
@@ -21,21 +19,45 @@ PID = os.getpid()
 USER = pwd.getpwuid(os.getuid()).pw_name
 HOST = socket.gethostname()
 
+# Global for our instance
+INSTANCE=None
 
-class Logger():
+def Logger(min_log_level_to_print=logging.INFO,
+           min_log_level_to_mail=logging.WARNING,
+           min_log_level_to_save=logging.INFO,
+           min_log_level_to_syslog=logging.WARNING,
+           filename=None,
+           emails=None,
+           use_root_logger=False):
+
+    global INSTANCE
+    if INSTANCE:
+        return INSTANCE
+    else:
+        INSTANCE = AlkiviLogger.instance(min_log_level_to_print,
+                                         min_log_level_to_mail,
+                                         min_log_level_to_save,
+                                         min_log_level_to_syslog,
+                                         filename,
+                                         emails,
+                                         use_root_logger)
+        return INSTANCE
+
+@Singleton
+class AlkiviLogger(object):
     """
         This class defines a custom Logger class.
 
         This main property is iteration which allow to perform loop iteration
         easily
     """
-    def __init__(self, logger,
-                 min_log_level_to_print=logging.INFO,
+    def __init__(self, min_log_level_to_print=logging.INFO,
                  min_log_level_to_mail=logging.WARNING,
                  min_log_level_to_save=logging.INFO,
                  min_log_level_to_syslog=logging.WARNING,
                  filename=None,
-                 emails=None):
+                 emails=None,
+                 use_root_logger=False):
         """
         Create a Logger object, that can be used to log.
 
@@ -47,7 +69,6 @@ class Logger():
             emails = []
 
         # Default Attributes
-        self.subject = "%s_%i" % (SOURCE, PID)
         self.filename = filename
         self.emails = emails
         self.prefix = []
@@ -64,12 +85,11 @@ class Logger():
         # Create object Dumper
         self.pretty_printer = pprint.PrettyPrinter(indent=4)
 
-        # Init Root Logger
-        self.root_logger = logging.getLogger()
-        self.init_root_logger()
-
         # Init our logger
-        self.logger = logger
+        if use_root_logger:
+            self.logger = logging.getLogger()
+        else:
+            self.logger = logging.getLogger(SOURCE)
         self.init_logger()
 
     def _log(self, priority, message, *args, **kwargs):
@@ -115,10 +135,11 @@ class Logger():
         """
         self.logger.exception(message, *args, **kwargs)
 
-    def init_root_logger(self):
+    def init_logger(self):
         """Create configuration for the root logger."""
         # All logs are comming to this logger
-        self.root_logger.setLevel(0)
+        self.logger.setLevel(logging.DEBUG)
+        self.logger.propagate = False
 
         # Logging to console
         if self.min_log_level_to_print:
@@ -145,10 +166,6 @@ class Logger():
             self._create_handler(handler_class, level)
 
         return
-
-    def init_logger(self):
-        """Init app logger with format."""
-        pass
 
     def new_loop_logger(self):
         """
@@ -252,7 +269,7 @@ class Logger():
             logging.warning('Error we should have an element to remove')
         else:
             self.handlers.remove(to_remove)
-            self.root_logger.removeHandler(to_remove)
+            self.logger.removeHandler(to_remove)
 
     def _update_handler(self, handler_class, level):
         """Update the level of an handler."""
@@ -281,7 +298,7 @@ class Logger():
         formatter = self.get_formatter(handler)
         handler.setFormatter(formatter)
         self.handlers.append(handler)
-        self.root_logger.addHandler(handler)
+        self.logger.addHandler(handler)
 
     def get_formatter(self, handler):
         """
