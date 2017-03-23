@@ -10,7 +10,6 @@ import socket
 import pprint
 
 from .handlers import AlkiviEmailHandler
-from .singleton import Singleton
 
 # Globals used to send extra information using emails
 SOURCE = sys.argv[0]
@@ -19,32 +18,8 @@ PID = os.getpid()
 USER = pwd.getpwuid(os.getuid()).pw_name
 HOST = socket.gethostname()
 
-# Global for our instance
-INSTANCE=None
 
-def Logger(min_log_level_to_print=logging.INFO,
-           min_log_level_to_mail=logging.WARNING,
-           min_log_level_to_save=logging.INFO,
-           min_log_level_to_syslog=logging.WARNING,
-           filename=None,
-           emails=None,
-           use_root_logger=False):
-
-    global INSTANCE
-    if INSTANCE:
-        return INSTANCE
-    else:
-        INSTANCE = AlkiviLogger.instance(min_log_level_to_print,
-                                         min_log_level_to_mail,
-                                         min_log_level_to_save,
-                                         min_log_level_to_syslog,
-                                         filename,
-                                         emails,
-                                         use_root_logger)
-        return INSTANCE
-
-@Singleton
-class AlkiviLogger(object):
+class Logger(object):
     """
         This class defines a custom Logger class.
 
