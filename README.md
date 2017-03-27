@@ -22,7 +22,7 @@ logger = Logger(min_log_level_to_mail=None,
                 min_log_level_to_save=logging.DEBUG,
                 min_log_level_to_print=logging.DEBUG,
                 min_log_level_to_syslog=None,
-                emails=['anthony@alkivi.fr'],
+                emails=['youremail@example.org'],
                 use_root_logger=False) # If set to True will use root_logger
 
 #

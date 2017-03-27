@@ -1,13 +1,20 @@
 # -*- encoding: utf-8 -*-
 
-import sys
+import logging
 import os
 import pwd
-import logging
 import smtplib
 import socket
+import sys
 
-from email.mime.text import MIMEText
+from collections import OrderedDict
+
+try:
+    from email.message import EmailMessage
+    USE_MIME = False
+except ImportError: # pragma: no cover
+    from email.mime.text import MIMEText
+    USE_MIME = True
 
 # Globals used to send extra information using emails
 SOURCE = sys.argv[0]
@@ -33,19 +40,19 @@ class AlkiviEmailHandler(logging.Handler):
         self.flush_level = level
 
         # Init another buffer which will store everything
-        self.allbuffer = []
+        self.complete_buffer = []
 
         # Buffer is an array that contains formatted messages
-        self.buffer = []
+        self.current_buffer = []
 
     def emit(self, record):
         msg = self.format(record)
 
         if(record.levelno >= self.flush_level):
-            self.buffer.append(msg)
+            self.current_buffer.append(msg)
 
         # Add to all buffer in any case
-        self.allbuffer.append(msg)
+        self.complete_buffer.append(msg)
 
     def generate_mail(self):
         """Generate the email as MIMEText
@@ -53,36 +60,54 @@ class AlkiviEmailHandler(logging.Handler):
 
         # Script info
         msg = "Script info : \r\n"
-        msg = msg + "%-9s: %s" % ('Script', SOURCE) + "\r\n"
+        msg = msg + "%-9s: %s" % ('Script', SOURCEDIR) + "\r\n"
         msg = msg + "%-9s: %s" % ('User', USER) + "\r\n"
         msg = msg + "%-9s: %s" % ('Host', HOST) + "\r\n"
         msg = msg + "%-9s: %s" % ('PID', PID) + "\r\n"
 
         # Current trace
         msg = msg + "\r\nCurrent trace : \r\n"
-        for record in self.buffer:
+        for record in self.current_buffer:
             msg = msg + record + "\r\n"
 
         # Now add stack trace
         msg = msg + "\r\nFull trace : \r\n"
-        for record in self.allbuffer:
+        for record in self.complete_buffer:
             msg = msg + record + "\r\n"
 
         # Dump ENV
         msg = msg + "\r\nEnvironment:" + "\r\n"
-        for name, value in os.environ.items():
+        environ = OrderedDict(sorted(os.environ.items()))
+        for name, value in environ.items():
             msg = msg + "%-10s = %s\r\n" % (name, value)
 
-        real_msg = MIMEText(msg, _charset='utf-8')
+        if USE_MIME:
+            real_msg = MIMEText(msg, _charset='utf-8')
 
-        real_msg['Subject'] = self.buffer[0]
-        real_msg['To'] = ','.join(self.toaddrs)
-        real_msg['From'] = self.fromaddr
+            real_msg['Subject'] = self.get_subject()
+            real_msg['To'] = ','.join(self.toaddrs)
+            real_msg['From'] = self.fromaddr
+
+        else:
+            real_msg = EmailMessage()
+
+            real_msg['Subject'] = self.get_subject()
+            real_msg['To'] = ','.join(self.toaddrs)
+            real_msg['From'] = self.fromaddr
+
+            real_msg.set_content(msg)
 
         return real_msg
 
+    def get_subject(self):
+        """Generate the subject."""
+        level = logging.getLevelName(self.flush_level)
+        message = self.current_buffer[0].split("\n")[0]
+        message = message.split(']')[-1]
+        return '{0} : {1}{2}'.format(level, SOURCE, message)
+
     def flush(self):
-        if len(self.buffer) > 0:
+        if len(self.current_buffer) > 0:
             try:
                 port = self.mailport
                 if not port:
@@ -91,10 +116,13 @@ class AlkiviEmailHandler(logging.Handler):
                 smtp = smtplib.SMTP(self.mailhost, port)
                 msg = self.generate_mail()
 
-                smtp.sendmail(self.fromaddr, self.toaddrs, msg.__str__())
+                if USE_MIME:
+                    smtp.sendmail(self.fromaddr, self.toaddrs, msg.__str__())
+                else:
+                    smtp.send_message(msg)
                 smtp.quit()
             except Exception as exception:
                 self.handleError(None)  # no particular record
 
-        self.buffer = []
-        self.allbuffer = []
+        self.current_buffer = []
+        self.complete_buffer = []
