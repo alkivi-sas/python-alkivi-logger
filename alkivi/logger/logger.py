@@ -193,7 +193,7 @@ class Logger(object):
                 self._delete_handler(handler_class)
             else:
                 self._update_handler(handler_class, level=level)
-        else:
+        elif level:
             self._create_handler(handler_class, level)
 
     def set_min_level_to_print(self, level):
