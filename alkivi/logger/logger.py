@@ -176,6 +176,10 @@ class Logger(object):
         self.flush()
 
         # Fix prefix
+        self.set_prefix(prefix)
+
+    def set_prefix(self, prefix):
+        """Update prefix."""
         self.prefix[-1] = prefix
         self.reset_formatter()
 

@@ -12,7 +12,7 @@ from collections import OrderedDict
 try:
     from email.message import EmailMessage
     USE_MIME = False
-except ImportError: # pragma: no cover
+except ImportError:  # pragma: no cover
     from email.mime.text import MIMEText
     USE_MIME = True
 
@@ -121,7 +121,7 @@ class AlkiviEmailHandler(logging.Handler):
                 else:
                     smtp.send_message(msg)
                 smtp.quit()
-            except Exception as exception:
+            except Exception:
                 self.handleError(None)  # no particular record
 
         self.current_buffer = []
