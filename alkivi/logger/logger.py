@@ -32,7 +32,8 @@ class Logger(object):
                  min_log_level_to_syslog=logging.WARNING,
                  filename=None,
                  emails=None,
-                 use_root_logger=False):
+                 use_root_logger=False,
+                 **kwargs):
         """
         Create a Logger object, that can be used to log.
 
@@ -63,6 +64,9 @@ class Logger(object):
         # Init our logger
         if use_root_logger:
             self.logger = logging.getLogger()
+        elif 'name' in kwargs and kwargs['name']:
+            name = kwargs['name']
+            self.logger = logging.getLogger(name)
         else:
             self.logger = logging.getLogger(SOURCE)
         self.init_logger()
