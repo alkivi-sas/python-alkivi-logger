@@ -49,6 +49,19 @@ class Logger(object):
         self.emails = emails
         self.prefix = []
 
+        # Override default handler
+        handler_map = {
+                "print": logging.StreamHandler,
+                "mail": AlkiviEmailHandler,
+                "save": logging.handlers.TimedRotatingFileHandler,
+                "syslog": logging.handlers.SysLogHandler,
+        }
+        for key, handler_class in handler_map.items():
+            kwarg_key = "{0}_default_handler".format(key)
+            if kwarg_key in kwargs:
+                handler_class = kwargs[kwarg_key]
+            setattr(self, kwarg_key, handler_class)
+
         # Default level
         self.min_log_level_to_print = min_log_level_to_print
         self.min_log_level_to_save = min_log_level_to_save
@@ -123,25 +136,25 @@ class Logger(object):
         # Logging to console
         if self.min_log_level_to_print:
             level = self.min_log_level_to_print
-            handler_class = logging.StreamHandler
+            handler_class = self.print_default_handler
             self._create_handler(handler_class, level)
 
         # Logging to file
         if self.min_log_level_to_save:
             level = self.min_log_level_to_save
-            handler_class = logging.handlers.TimedRotatingFileHandler
+            handler_class = self.save_default_handler
             self._create_handler(handler_class, level)
 
         # Logging to syslog
         if self.min_log_level_to_syslog:
             level = self.min_log_level_to_syslog
-            handler_class = logging.handlers.SysLogHandler
+            handler_class = self.syslog_default_handler
             self._create_handler(handler_class, level)
 
         # Logging to email
         if self.min_log_level_to_mail:
             level = self.min_log_level_to_mail
-            handler_class = AlkiviEmailHandler
+            handler_class = self.mail_default_handler
             self._create_handler(handler_class, level)
 
         return
@@ -208,28 +221,28 @@ class Logger(object):
         """Allow to change print level after creation
         """
         self.min_log_level_to_print = level
-        handler_class = logging.StreamHandler
+        handler_class = self.print_default_handler
         self._set_min_level(handler_class, level)
 
     def set_min_level_to_save(self, level):
         """Allow to change save level after creation
         """
         self.min_log_level_to_save = level
-        handler_class = logging.handlers.TimedRotatingFileHandler
+        handler_class = self.save_default_handler
         self._set_min_level(handler_class, level)
 
     def set_min_level_to_mail(self, level):
         """Allow to change mail level after creation
         """
         self.min_log_level_to_mail = level
-        handler_class = AlkiviEmailHandler
+        handler_class = self.mail_default_handler
         self._set_min_level(handler_class, level)
 
     def set_min_level_to_syslog(self, level):
         """Allow to change syslog level after creation
         """
         self.min_log_level_to_syslog = level
-        handler_class = logging.handlers.SysLogHandler
+        handler_class = self.syslog_default_handler
         self._set_min_level(handler_class, level)
 
     def _get_handler(self, handler_class):
@@ -261,16 +274,16 @@ class Logger(object):
 
     def _create_handler(self, handler_class, level):
         """Create an handler for at specific level."""
-        if handler_class == logging.StreamHandler:
+        if handler_class == self.print_default_handler:
             handler = handler_class()
             handler.setLevel(level)
-        elif handler_class == logging.handlers.SysLogHandler:
+        elif handler_class == self.syslog_default_handler:
             handler = handler_class(address='/dev/log')
             handler.setLevel(level)
-        elif handler_class == logging.handlers.TimedRotatingFileHandler:
+        elif handler_class == self.save_default_handler:
             handler = handler_class(self.filename, when='midnight')
             handler.setLevel(level)
-        elif handler_class == AlkiviEmailHandler:
+        elif handler_class == self.mail_default_handler:
             handler = handler_class(mailhost='127.0.0.1',
                                     fromaddr="%s@%s" % (USER, HOST),
                                     toaddrs=self.emails,
@@ -290,7 +303,7 @@ class Logger(object):
         All handlers are the same format, except syslog.
         We omit time when syslogging.
         """
-        if isinstance(handler, logging.handlers.SysLogHandler):
+        if isinstance(handler, self.syslog_default_handler):
             formatter = '[%(levelname)-9s]'
         else:
             formatter = '[%(asctime)s] [%(levelname)-9s]'
